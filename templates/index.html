@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Quran Ayat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Amiri&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Tombol Toggle Night Mode -->
+    <button id="theme-toggle" title="Toggle Night Mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="container">
+        <h1>Random Quran Ayat</h1>
+        <div class="language-switcher">
+            <button id="english-btn"><i class="fas fa-globe"></i> English</button>
+            <button id="indonesian-btn"><i class="fas fa-globe-asia"></i> Indonesia</button>
+        </div>
+        <div id="ayat-container">
+            <div id="surah-container">
+                <h2 id="surah-name"></h2>
+                <p id="surah-name-latin"></p>
+                <p id="surah-translation"></p>
+                <p id="ayat-number"></p>
+            </div>
+            
+            <p id="arabic" class="arabic-text"></p>
+            <p id="translation"></p>
+            <div id="tafsir-container">
+                <h3><i class="fas fa-book-open"></i> Tafsir Kemenag</h3>
+                <p id="tafsir"></p>
+            </div>
+            
+            <audio id="audio" controls>
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+        
+        <!-- Tombol Navigasi Ayat -->
+        <div class="navigation-buttons">
+            <button id="previous-button"><i class="fas fa-arrow-left"></i> Previous</button>
+            <button id="random-button"><i class="fas fa-random"></i> Random</button>
+            <button id="next-button">Next <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+
+    <script>
+        let currentAyahNumber = 0;  // Menyimpan nomor ayat saat ini
+        let currentSurahNumber = 0; // Menyimpan nomor surah saat ini
+        let currentLanguage = 'english'; // Default language
+        let currentData = null; // Menyimpan data ayat yang sedang ditampilkan
+
+        // Fungsi untuk memuat ayat secara acak
+        function loadRandomAyat() {
+            fetch('/random_ayat')
+                .then(response => response.json())
+                .then(data => {
+                    // Simpan data ayat yang sedang ditampilkan
+                    currentData = data;
+
+                    // Perbarui nomor ayat dan surah saat ini
+                    currentAyahNumber = data.ayah_number;
+                    currentSurahNumber = data.surah_number;
+
+                    // Perbarui tampilan
+                    updateUI(data);
+                });
+        }
+
+        // Fungsi untuk memuat ayat berikutnya
+        function loadNextAyat() {
+            fetch(`/next_ayat/${currentAyahNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Simpan data ayat yang sedang ditampilkan
+                    currentData = data;
+
+                    // Perbarui nomor ayat dan surah saat ini
+                    currentAyahNumber = data.ayah_number;
+                    currentSurahNumber = data.surah_number;
+
+                    // Perbarui tampilan
+                    updateUI(data);
+                });
+        }
+
+        // Fungsi untuk memuat ayat sebelumnya
+        function loadPreviousAyat() {
+            fetch(`/previous_ayat/${currentAyahNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Simpan data ayat yang sedang ditampilkan
+                    currentData = data;
+
+                    // Perbarui nomor ayat dan surah saat ini
+                    currentAyahNumber = data.ayah_number;
+                    currentSurahNumber = data.surah_number;
+
+                    // Perbarui tampilan
+                    updateUI(data);
+                });
+        }
+
+        // Fungsi untuk memperbarui tampilan UI
+        function updateUI(data) {
+            document.getElementById('surah-name').innerText = data.surah;
+            document.getElementById('surah-name-latin').innerText = `(${data.surah_latin})`;
+            document.getElementById('surah-translation').innerText = currentLanguage === 'english' ? `(${data.surah_translation})` : `(${data.surah_translation_ind})`;
+            document.getElementById('ayat-number').innerText = `Ayat: ${data.ayah}`;
+
+            document.getElementById('arabic').innerText = data.arabic;
+            document.getElementById('translation').innerText = currentLanguage === 'english' ? data.english : data.indonesian;
+            document.getElementById('tafsir').innerText = data.tafsir_kemenag;
+
+            const audioElement = document.getElementById('audio');
+            audioElement.src = data.audio;
+            audioElement.style.display = 'block';
+        }
+
+        // Fungsi untuk memperbarui terjemahan tanpa memuat ulang ayat
+        function updateTranslation() {
+            if (currentData) {
+                // Perbarui tampilan terjemahan dan tafsir
+                document.getElementById('surah-translation').innerText = currentLanguage === 'english' ? `(${currentData.surah_translation})` : `(${currentData.surah_translation_ind})`;
+                document.getElementById('translation').innerText = currentLanguage === 'english' ? currentData.english : currentData.indonesian;
+            }
+        }
+
+        // Memuat ayat acak saat halaman pertama kali dimuat
+        window.onload = loadRandomAyat;
+
+        // Event listener untuk tombol "Get Random Ayat"
+        document.getElementById('random-button').addEventListener('click', loadRandomAyat);
+
+        // Event listener untuk tombol "Next Ayat"
+        document.getElementById('next-button').addEventListener('click', loadNextAyat);
+
+        // Event listener untuk tombol "Previous Ayat"
+        document.getElementById('previous-button').addEventListener('click', loadPreviousAyat);
+
+        // Event listener untuk tombol bahasa
+        document.getElementById('english-btn').addEventListener('click', () => {
+            currentLanguage = 'english';
+            updateTranslation(); // Perbarui terjemahan tanpa memuat ulang ayat
+        });
+
+        document.getElementById('indonesian-btn').addEventListener('click', () => {
+            currentLanguage = 'indonesian';
+            updateTranslation(); // Perbarui terjemahan tanpa memuat ulang ayat
+        });
+
+        // Script untuk Night Mode
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        // Cek preferensi tema dari localStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            body.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        // Toggle tema saat tombol ditekan
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
+
+        // Fungsi untuk mengubah ikon tema
+        function updateThemeIcon(theme) {
+            const icon = theme === 'dark' ? 'fa-sun' : 'fa-moon';
+            themeToggle.innerHTML = `<i class="fas ${icon}"></i>`;
+        }
+    </script>
+</body>
+</html>
